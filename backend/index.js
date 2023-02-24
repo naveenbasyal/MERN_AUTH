@@ -8,7 +8,7 @@ app.use(express.urlencoded());
 app.use(cors());
 
 mongoose.connect(
-  "mongodb://localhost:27017/Newauth",
+  `mongodb+srv://naveenbasyal001:12345@cluster0.k73nfoc.mongodb.net/newauth?retryWrites=true&w=majority`,
   {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -19,9 +19,16 @@ mongoose.connect(
 );
 
 const mySchema = new mongoose.Schema({
-  name: "String",
-  email: "String",
-  password: "String",
+  name: {
+    type: String,
+  },
+  email: {
+    type: String,
+    unique: true,
+  },
+  password: {
+    type: String,
+  },
 });
 
 //----------------creating model--------
@@ -29,41 +36,50 @@ const mySchema = new mongoose.Schema({
 const User = new mongoose.model("User", mySchema);
 
 //------------Routes------------
-app.post("/login", (req, res) => {
+app.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  User.findOne({ email: email }, (err, user) => {
-    if (user) {
-      if (password === user.password) {
-        res.send({ message: "Login Succesful", user: user });
-      } else {
-        res.send({ message: "Password didn't match" });
-      }
-    } else {
-      res.send({ message: "User not Registered" });
-    }
-  });
-});
-app.post("/signup", (req, res) => {
-  const { name, email, password } = req.body;
-  User.findOne({ email: email }, (err, user) => {
-    if (user) {
-      res.send({ message: "User already registered" });
-    } else {
-      const user = new User({
-        name,
-        email,
-        password,
-      });
-      user.save((err) => {
-        if (err) {
-          res.send(err);
-        } else {
-          res.send({ message: "successfully registed" });
-        }
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({
+        msg: "User not found",
       });
     }
-  });
+    const isPasswordMatch = user.password === password;
+    if (!isPasswordMatch) {
+      return res.status(400).json({ msg: "PasswordNotMatch" });
+    }
+    return res.status(200).json({ msg: "Login Successful" });
+  } catch (error) {
+    console.log(error);
+    return res
+      .status(500)
+      .json({ username: user.name, msg: "Server error" });
+  }
 });
+app.post("/signup", async (req, res) => {
+  const { name, email, password, phone, profession } = req.body;
+  try {
+    const exist = await User.findOne({ email: email });
+    if (exist) {
+      return res.status(400).json({ msg: "AlreadyExist" });
+    }
+    await User.create({
+      email,
+      password,
+      name,
+      phone,
+      profession,
+    });
+    res.status(200).json({ msg: "User Created succesfuly" });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      msg: "Server error",
+    });
+  }
+});
+
 app.listen(9002, () => {
   console.log("Started at port 9002");
 });

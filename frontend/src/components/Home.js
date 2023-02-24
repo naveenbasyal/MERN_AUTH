@@ -1,14 +1,9 @@
-import React from "react";
-import { useLocation } from "react-router-dom";
+import React from 'react'
 
 const Home = () => {
-  const location = useLocation();
-
   return (
-    <div className="container my-4">
-      <h1>Welcome {location.state.id} to the Home Page</h1>
-    </div>
-  );
-};
+    <h1>Welcome</h1>
+  )
+}
 
-export default Home;
+export default Home
